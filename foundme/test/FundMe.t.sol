@@ -50,12 +50,12 @@ contract FundMeTest is Test {
         _;
     }
 
-    function tetsAddsFunderToArray() public funded {
-        vm.prank(UFFI);
-        fundMe.fund{value: 6e18}();
-        address funder = fundMe.getFounder(0);
-        assertEq(funder, UFFI, "Funder should be UFFI");
-    }
+function testAddsFunderToArray() public funded {
+    vm.prank(UFFI);
+    fundMe.fund{value: 6e18}();
+    address funder = fundMe.getFounder(0);
+    assertEq(funder, UFFI, "Funder should be UFFI");
+}
 
     function testOnlyOwnerCanWithdraw() public funded {
         vm.expectRevert();
@@ -67,6 +67,8 @@ contract FundMeTest is Test {
         uint256 contractBalance = address(fundMe).balance;
         console.log("Initial balance:", initialBalance);
         console.log("Contract balance:", contractBalance);
+        uint256 gasStart = gasleft();
+        console.log("Gas left before withdrawal:", gasStart);
         vm.prank(fundMe.getOwner());
         fundMe.withdraw();
         uint256 finalBalance = fundMe.getOwner().balance;
@@ -88,6 +90,25 @@ contract FundMeTest is Test {
         console.log("Contract balance:", contractBalance);
         vm.startPrank(fundMe.getOwner());
         fundMe.withdraw();
+        vm.stopPrank();
+        uint256 finalBalance = fundMe.getOwner().balance;
+        console.log("Final balance:", finalBalance);
+        assertEq(finalBalance, initialBalance + contractBalance, "Owner should have received the contract balance");
+    }
+
+        function testWitddrawMultipleFunderscheeper() public funded {
+        uint160 numberOfFunders = 10;
+        for (uint160 i = 1; i < numberOfFunders; i++){
+            hoax(address(i), 6e18);
+            fundMe.fund{value: 6e18}();
+        }
+
+        uint256 initialBalance = fundMe.getOwner().balance;
+        uint256 contractBalance = address(fundMe).balance;
+        console.log("Initial balance:", initialBalance);
+        console.log("Contract balance:", contractBalance);
+        vm.startPrank(fundMe.getOwner());
+        fundMe.withdrawCheeper();
         vm.stopPrank();
         uint256 finalBalance = fundMe.getOwner().balance;
         console.log("Final balance:", finalBalance);

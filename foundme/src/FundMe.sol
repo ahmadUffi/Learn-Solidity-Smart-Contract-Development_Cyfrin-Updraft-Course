@@ -12,8 +12,6 @@ contract FundMe {
 
     mapping(address => uint256) private s_addressToAmountFunded;
     address[] public s_funders;
-
-    // Could we make this constant?  /* hint: no! We should make it immutable! */
     address private /* immutable */ i_owner;
     AggregatorV3Interface private  s_priceFeed;
     uint256 public constant MINIMUM_USD = 5 * 10 ** 18;
@@ -41,12 +39,24 @@ contract FundMe {
         _;
     }
 
+    function withdrawCheeper() public onlyOwner {
+        uint256 foundersLength = s_funders.length;
+        for (uint256 funderIndex = 0; funderIndex < foundersLength; funderIndex++) {
+            address funder = s_funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
+        }   
+        s_funders = new address[](0);
+        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
+        require(callSuccess, "Call failed");
+    }
+
     function withdraw() public onlyOwner {
         for (uint256 funderIndex = 0; funderIndex < s_funders.length; funderIndex++) {
             address funder = s_funders[funderIndex];
             s_addressToAmountFunded[funder] = 0;
         }
         s_funders = new address[](0);
+
         // // transfer
         // payable(msg.sender).transfer(address(this).balance);
 
